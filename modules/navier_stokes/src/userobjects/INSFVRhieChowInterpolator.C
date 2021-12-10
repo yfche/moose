@@ -129,7 +129,11 @@ INSFVRhieChowInterpolator::INSFVRhieChowInterpolator(const InputParameters & par
   if (_w)
     _var_numbers.push_back(_w->number());
 
+  if (&(UserObject::_subproblem) != &(TaggingInterface::_subproblem))
+    mooseError("Different subproblems in INSFVRhieChowInterpolator!");
+
   for (const auto tid : make_range(libMesh::n_threads()))
+  {
     _vel[tid] = std::make_unique<PiecewiseByBlockLambdaFunctor<ADRealVectorValue>>(
         name() + std::to_string(tid),
         [this, tid](const auto & r, const auto & t) -> ADRealVectorValue {
@@ -145,13 +149,11 @@ INSFVRhieChowInterpolator::INSFVRhieChowInterpolator(const InputParameters & par
         _moose_mesh,
         blockIDs());
 
-  if (&(UserObject::_subproblem) != &(TaggingInterface::_subproblem))
-    mooseError("Different subproblems in INSFVRhieChowInterpolator!");
-
-  UserObject::_subproblem.addFunctor("bx", _bx, 0);
-  UserObject::_subproblem.addFunctor("by", _by, 0);
-  UserObject::_subproblem.addFunctor("b2x", _b2x, 0);
-  UserObject::_subproblem.addFunctor("b2y", _b2y, 0);
+    UserObject::_subproblem.addFunctor("bx", _bx, tid);
+    UserObject::_subproblem.addFunctor("by", _by, tid);
+    UserObject::_subproblem.addFunctor("b2x", _b2x, tid);
+    UserObject::_subproblem.addFunctor("b2y", _b2y, tid);
+  }
 }
 
 bool

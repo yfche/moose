@@ -73,6 +73,18 @@
     issues = '#16794 #16937'
     mesh_mode = REPLICATED
   []
+  [mixing-length-jac]
+    type = 'PetscJacobianTester'
+    input = 2d-mixing-length.i
+    run_sim = True
+    requirement = 'The system shall be able to model the effect of Reynolds-averaged parameters on the momentum and passive scalar advection equations using a mixing length model and show a perfect Jacobian'
+    ad_indexing_type = 'global'
+    design = 'navier_stokes/rans_theory.md'
+    issues = '#16794 #16937'
+    mesh_mode = REPLICATED
+    difference_tol = 1e-7
+    cli_args = "Mesh/gen/nx=2 Mesh/gen/ny=2"
+  []
   [linear-friction]
     type = 'Exodiff'
     input = 2d-rc-friction.i
