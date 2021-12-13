@@ -79,6 +79,8 @@ INSFVMomentumAdvectionOutflowBC::computeQpResidual()
   const auto boundary_face = singleSidedFaceArg();
 
   const auto rho_boundary = _rho(boundary_face);
+  const auto eps_boundary = epsFunctor()(boundary_face);
+
   // This will tend to be an extrapolated boundary for the velocity in which case, when using two
   // term expansion, this boundary value will actually be a function of more than just the degree of
   // freedom at the cell centroid adjacent to the face, e.g. it can/will depend on surrounding cell
@@ -88,10 +90,10 @@ INSFVMomentumAdvectionOutflowBC::computeQpResidual()
   {
     const auto dof_number = elem.dof_number(_sys.number(), _var.number(), 0);
     _a = var_boundary.derivatives()[dof_number];
-    _a *= _normal * v * rho_boundary;
+    _a *= _normal * v * rho_boundary / eps_boundary;
   }
 
-  return _normal * v * rho_boundary * var_boundary;
+  return _normal * v * rho_boundary / eps_boundary * var_boundary;
 #else
   mooseError("INSFV is not supported by local AD indexing. In order to use INSFV, please run the "
              "configure script in the root MOOSE directory with the configure option "

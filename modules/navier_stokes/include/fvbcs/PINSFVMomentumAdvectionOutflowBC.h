@@ -21,11 +21,9 @@ class PINSFVMomentumAdvectionOutflowBC : public INSFVMomentumAdvectionOutflowBC
 public:
   static InputParameters validParams();
   PINSFVMomentumAdvectionOutflowBC(const InputParameters & params);
-  using INSFVMomentumAdvectionOutflowBC::gatherRCData;
-  void gatherRCData(const FaceInfo &) override;
 
 protected:
-  virtual ADReal computeQpResidual() override;
+  const Moose::FunctorImpl<ADReal> & epsFunctor() const override { return _eps; }
 
   /// porosity
   const Moose::Functor<ADReal> & _eps;

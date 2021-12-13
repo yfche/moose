@@ -33,6 +33,7 @@ public:
 
 protected:
   virtual ADReal computeQpResidual() override;
+  virtual const Moose::FunctorImpl<ADReal> & epsFunctor() const { return _unity_functor; }
 
   /// x-velocity
   const INSFVVelocityVariable * const _u_var;
@@ -52,4 +53,7 @@ protected:
 
   /// A member to hold computation of the Rhie-Chow coefficient
   ADReal _a = 0;
+
+  /// A unity functor used in the epsilon virtual method
+  const Moose::ConstantFunctor<ADReal> _unity_functor{1};
 };
