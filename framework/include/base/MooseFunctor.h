@@ -916,32 +916,32 @@ public:
 private:
   ValueType evaluate(const ElemArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
   ValueType evaluate(const ElemFromFaceArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
   ValueType evaluate(const FaceArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
   ValueType evaluate(const SingleSidedFaceArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
   ValueType evaluate(const ElemQpArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
   ValueType evaluate(const ElemSideQpArg &, unsigned int) const override
   {
-    mooseError("we should never get here. If you have, contact a MOOSE developer and tell them "
+    mooseError("We should never get here. If you have, contact a MOOSE developer and tell them "
                "they've written broken code");
   }
 };
