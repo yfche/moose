@@ -34,7 +34,6 @@ protected:
 
 private:
   void pinsfvSetup();
-  bool _initial_setup_done = false;
 };
 
 inline const Moose::FunctorImpl<ADReal> &

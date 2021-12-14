@@ -44,8 +44,9 @@ public:
   void addToB(const libMesh::Elem * elem, unsigned int component, const ADReal & value);
   VectorValue<ADReal>
   getVelocity(Moose::FV::InterpMethod m, const FaceInfo & fi, THREAD_ID tid) const;
+  void hasBodyForces(const std::set<SubdomainID> & sub_ids);
 
-  void initialSetup() override;
+  void residualSetup() override;
   void meshChanged() override;
 
   void initialize() override final;
@@ -62,6 +63,16 @@ protected:
    * A virtual method that allows us to only implement getVelocity once for free and porous flows
    */
   virtual const Moose::FunctorImpl<ADReal> & epsilon(THREAD_ID tid) const;
+
+  /**
+   * Whether body forces are present on any portion of this user-object's domain
+   */
+  bool hasBodyForces() const { return !_sub_ids_with_body_forces.empty(); }
+
+  /**
+   * perform the setup of this object
+   */
+  void insfvSetup();
 
   MooseMesh & _moose_mesh;
   const libMesh::MeshBase & _mesh;
@@ -92,8 +103,15 @@ protected:
                          std::unordered_map<dof_id_type, libMesh::VectorValue<ADReal>>>
       _b2;
 
+  /// The subdomains that have body force residual objects
+  std::set<SubdomainID> _sub_ids_with_body_forces;
+
+  /// Whether we have performed our initial setup. Ordinarily we would do this in initialSetup but
+  /// there are wonky things that happen in other objects initialSetup that affect us, like how
+  /// Exodus output gathers all elements to 0 on distributed mesh
+  bool _initial_setup_done = false;
+
 private:
-  void insfvSetup();
   void finalizeAData();
   void computeFirstAndSecondOverBars();
   void computeThirdOverBar();

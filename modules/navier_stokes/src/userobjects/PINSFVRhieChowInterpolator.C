@@ -29,8 +29,9 @@ PINSFVRhieChowInterpolator::validParams()
       "ElementSideNeighborLayers",
       Moose::RelationshipManagerType::GEOMETRIC,
       [](const InputParameters & obj_params, InputParameters & rm_params) {
+        // We need one additional layer for the case that we have an extrapolated boundary face
         rm_params.set<unsigned short>("layers") =
-            obj_params.get<unsigned short>("smoothing_layers");
+            obj_params.get<unsigned short>("smoothing_layers") + 1;
         rm_params.set<bool>("use_displaced_mesh") = obj_params.get<bool>("use_displaced_mesh");
       });
   return params;
@@ -63,16 +64,18 @@ PINSFVRhieChowInterpolator::PINSFVRhieChowInterpolator(const InputParameters & p
 void
 PINSFVRhieChowInterpolator::meshChanged()
 {
-  INSFVRhieChowInterpolator::meshChanged();
+  insfvSetup();
   pinsfvSetup();
 }
 
 void
 PINSFVRhieChowInterpolator::residualSetup()
 {
-  INSFVRhieChowInterpolator::residualSetup();
   if (!_initial_setup_done)
+  {
+    insfvSetup();
     pinsfvSetup();
+  }
 
   _initial_setup_done = true;
 }
@@ -94,12 +97,9 @@ PINSFVRhieChowInterpolator::pinsfvSetup()
 
   const auto saved_do_derivatives = ADReal::do_derivatives;
   ADReal::do_derivatives = true;
-  _smoothed_eps.mapFilled(false);
-
   Moose::FV::interpolateReconstruct(
       _smoothed_eps, _eps, _smoothing_layers, false, false, _geometric_fi, *this);
   ADReal::do_derivatives = saved_do_derivatives;
-  _smoothed_eps.mapFilled(true);
 
   _eps.assign(_smoothed_eps);
 

@@ -33,4 +33,6 @@ INSFVElementalKernel::INSFVElementalKernel(const InputParameters & params)
           "' on the associated Rhie-Chow user-object '",
           _rc_uo.name(),
           "' instead.");
+
+  _rc_uo.hasBodyForces(blockRestricted() ? blockIDs() : _mesh.meshSubdomains());
 }

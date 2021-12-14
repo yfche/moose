@@ -172,7 +172,37 @@ INSFVRhieChowInterpolator::isFaceGeometricallyRelevant(const FaceInfo & fi) cons
     on_us = on_us || _sub_ids.count(fi.neighbor().subdomain_id());
   }
 
-  return on_us;
+  if (!on_us)
+    // Neither the element nor neighbor has a subdomain id on which we are active, so this face is
+    // not relevant
+    return false;
+
+  //
+  // Ok, we've established that either the element or neighbor is active on our subdomains and
+  // neither of them are remote elements, so this face is still in the running to be considered
+  // relevant. There is one more caveat to be considered. In the case that we are a boundary face,
+  // we will generally need a two term expansion to compute our value, which will require a
+  // cell-gradient evaluation. If that is the case, then all of our surrounding neighbors cannot be
+  // remote. If we are not a boundary face, then at this point we're safe
+  //
+
+  if (fi.neighborPtr())
+    return true;
+
+  mooseAssert(fi.elem().on_boundary(),
+              "If we don't have a neighbor pointer, then this element has to be on a boundary");
+
+  for (auto * const neighbor : fi.elem().neighbor_ptr_range())
+  {
+    if (!neighbor)
+      continue;
+
+    if ((neighbor == libMesh::remote_elem))
+      return false;
+  }
+
+  // We made it through all the tests!
+  return true;
 }
 
 void
@@ -226,7 +256,7 @@ INSFVRhieChowInterpolator::insfvSetup()
       if (!neighbor)
         continue;
 
-      if ((neighbor == libMesh::remote_elem) || !is_elem_evaluable(*neighbor))
+      if (!is_elem_evaluable(*neighbor))
         return false;
     }
 
@@ -241,9 +271,12 @@ INSFVRhieChowInterpolator::insfvSetup()
 }
 
 void
-INSFVRhieChowInterpolator::initialSetup()
+INSFVRhieChowInterpolator::residualSetup()
 {
-  insfvSetup();
+  if (!_initial_setup_done)
+    insfvSetup();
+
+  _initial_setup_done = true;
 }
 
 void
@@ -260,8 +293,6 @@ INSFVRhieChowInterpolator::initialize()
   _a.clear();
   _b.clear();
   _b2.clear();
-  _b.mapFilled(false);
-  _b2.mapFilled(false);
 }
 
 void
@@ -374,9 +405,6 @@ INSFVRhieChowInterpolator::computeFirstAndSecondOverBars()
   }
 
   Moose::FV::interpolateReconstruct(_b2, _b, 1, false, false, _evaluable_fi, *this);
-
-  _b.mapFilled(true);
-  _b2.mapFilled(true);
 }
 
 void
@@ -410,6 +438,17 @@ void
 INSFVRhieChowInterpolator::finalizeBData()
 {
 #ifdef MOOSE_GLOBAL_AD_INDEXING
+  // First thing we do is to fill our _b map with 0's for any subdomains that do not have body force
+  // kernels active
+  std::set<SubdomainID> forceless_subs;
+  std::set_difference(_sub_ids.begin(),
+                      _sub_ids.end(),
+                      _sub_ids_with_body_forces.begin(),
+                      _sub_ids_with_body_forces.end(),
+                      std::inserter(forceless_subs, forceless_subs.end()));
+  for (const auto & elem : _mesh.active_local_subdomain_set_elements_ptr_range(forceless_subs))
+    _b[elem->id()] = 0;
+
   // We do not have to push _b data because all that data should initially be
   // local, e.g. we only loop over active local elements for FVElementalKernels
 
@@ -465,7 +504,8 @@ void
 INSFVRhieChowInterpolator::finalize()
 {
   finalizeAData();
-  finalizeBData();
+  if (hasBodyForces())
+    finalizeBData();
 }
 
 VectorValue<ADReal>
@@ -573,15 +613,24 @@ INSFVRhieChowInterpolator::getVelocity(const Moose::FV::InterpMethod m,
 
   // evaluate face porosity, see (18) in Hanimann 2021 or (11) in Nordlund 2016
   const auto face_eps = epsilon(tid)(face);
-  const auto b1 = _b(face);
-  const auto b3 = _b2(face);
+  const auto b1 = hasBodyForces() ? _b(face) : VectorValue<ADReal>(0);
+  const auto b3 = hasBodyForces() ? _b2(face) : VectorValue<ADReal>(0);
 
   // Perform the pressure correction. We don't use skewness-correction on the pressure since
   // it only influences the averaged cell gradients which cancel out in the correction
   // below.
   for (const auto i : make_range(_dim))
-    velocity(i) +=
-        -face_D(i) * face_eps * (grad_p(i) - unc_grad_p(i)) + face_D(i) * (b1(i) - b3(i));
+  {
+    velocity(i) -= face_D(i) * face_eps * (grad_p(i) - unc_grad_p(i));
+    if (hasBodyForces())
+      velocity(i) += face_D(i) * (b1(i) - b3(i));
+  }
 
   return velocity;
+}
+
+void
+INSFVRhieChowInterpolator::hasBodyForces(const std::set<SubdomainID> & sub_ids)
+{
+  _sub_ids_with_body_forces.insert(sub_ids.begin(), sub_ids.end());
 }

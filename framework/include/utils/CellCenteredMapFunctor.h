@@ -36,31 +36,21 @@ public:
   using typename Moose::FunctorImpl<T>::GradientType;
   using typename Moose::FunctorImpl<T>::DotType;
 
-  CellCenteredMapFunctor(const MooseMesh & mesh,
-                         const bool nonorthgonal_correction,
-                         const bool map_filled = false)
-    : _mesh(mesh), _nonorthgonal_correction(nonorthgonal_correction), _map_filled(map_filled)
+  CellCenteredMapFunctor(const MooseMesh & mesh, const bool nonorthgonal_correction)
+    : _mesh(mesh), _nonorthgonal_correction(nonorthgonal_correction)
   {
   }
 
   bool isExtrapolatedBoundaryFace(const FaceInfo & fi) const override { return !fi.neighborPtr(); }
 
-  void mapFilled(const bool map_filled) { _map_filled = map_filled; }
-
 private:
   const MooseMesh & _mesh;
   const bool _nonorthgonal_correction;
-  bool _map_filled;
-  mutable Threads::spin_mutex _map_mutex;
 
   ValueType evaluate(const Moose::ElemArg & elem_arg, unsigned int) const override final
   {
     const Elem * const elem = elem_arg.elem;
-    if (_map_filled)
-      return libmesh_map_find(*this, elem->id());
-
-    Threads::spin_mutex::scoped_lock lock(_map_mutex);
-    return (*const_cast<CellCenteredMapFunctor *>(this))[elem->id()];
+    return libmesh_map_find(*this, elem->id());
   }
 
   ValueType evaluate(const Moose::FaceArg & face, unsigned int) const override final

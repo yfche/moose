@@ -1114,6 +1114,11 @@ public:
   void checkCoordinateSystems();
   void setCoordData(const MooseMesh & other_mesh);
 
+  /**
+   * Mark the face information as dirty
+   */
+  void faceInfoDirty() { _face_info_dirty = true; }
+
 protected:
   /// Deprecated (DO NOT USE)
   std::vector<std::unique_ptr<GhostingFunctor>> _ghosting_functors;
