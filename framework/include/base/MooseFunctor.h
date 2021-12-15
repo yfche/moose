@@ -702,18 +702,29 @@ public:
   using typename Moose::FunctorImpl<T>::DotType;
 
   /**
-   * Construct wrapper from wrapped object
+   * @param wrapped The functor to wrap. We will *not* not own the wrapped object
    */
   Functor(const FunctorImpl<T> & wrapped) : FunctorBase(), _wrapped(&wrapped) {}
-  Functor(FunctorImpl<T> &&) = delete;
 
+  /**
+   * @param wrapped A unique pointer around the functor to wrap. We *will* own the wrapped object,
+   * e.g. if we are ever destructed or we are reassigned to wrap another functor, then this functor
+   * will be destructed
+   */
   Functor(std::unique_ptr<FunctorImpl<T>> && wrapped)
     : FunctorBase(), _owned(std::move(wrapped)), _wrapped(_owned.get())
   {
   }
 
   /**
-   * Assign our wrapped object to be something new and release our previously wrapped object
+   * Prevent wrapping of a temporary object. If we are to own a functor, the unique_ptr constructor
+   * overload should be used
+   */
+  Functor(FunctorImpl<T> &&) = delete;
+
+  /**
+   * @param wrapped The functor to wrap. We will *not* not own the wrapped object. If we previously
+   * owned a functor, it will be destructed
    */
   void assign(const FunctorImpl<T> & wrapped)
   {
@@ -721,12 +732,21 @@ public:
     _wrapped = &wrapped;
   }
 
+  /**
+   * @param wrapped A unique pointer around the functor to wrap. We *will* own the wrapped object.
+   * If we previously owned a functor, it will be destructed
+   */
   void assign(std::unique_ptr<FunctorImpl<T>> && wrapped)
   {
-    _owned.reset();
     _owned = std::move(wrapped);
     _wrapped = _owned.get();
   }
+
+  /**
+   * Prevent wrapping of a temporary object. If we are to own a functor, the unique_ptr assign
+   * overload should be used
+   */
+  void assign(FunctorImpl<T> &&) = delete;
 
   Functor(const Functor &) = delete;
   Functor(Functor &&) = delete;
@@ -735,11 +755,18 @@ public:
 
   virtual ~Functor() = default;
 
+  /**
+   * @return whether this object wraps a null functor
+   */
   bool wrapsNull() const override { return wrapsType<NullFunctor<T>>(); }
+
+  /**
+   * @return a string representation of the return type of this functor
+   */
   std::string returnType() const override { return libMesh::demangle(typeid(T).name()); }
 
   /**
-   * Tests whether the wrapped object is of the requested type
+   * @return whether the wrapped object is of the requested type
    */
   template <typename T2>
   bool wrapsType() const
@@ -855,7 +882,7 @@ private:
 };
 
 /**
- * Class template for creating constants
+ * Class template for creating constant functors
  */
 template <typename T>
 class ConstantFunctor final : public FunctorImpl<T>

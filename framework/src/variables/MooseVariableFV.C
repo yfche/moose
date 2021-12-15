@@ -789,10 +789,9 @@ MooseVariableFV<OutputType>::adGradSln(const Elem * const elem, const bool corre
       return it->second;
   }
 
-  auto grad = Moose::FV::greenGaussGradient(
-      Moose::ElemArg({elem,
-                      _face_interp_method == Moose::FV::InterpMethod::SkewCorrectedAverage,
-                      correct_skewness}),
+  auto grad = FV::greenGaussGradient(
+      ElemArg(
+          {elem, _face_interp_method == FV::InterpMethod::SkewCorrectedAverage, correct_skewness}),
       *this,
       _two_term_boundary_expansion,
       this->_mesh,

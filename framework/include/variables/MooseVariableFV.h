@@ -528,20 +528,23 @@ private:
   using MooseVariableField<OutputType>::evaluate;
   using MooseVariableField<OutputType>::evaluateGradient;
   using MooseVariableField<OutputType>::evaluateDot;
-  ValueType evaluate(const Moose::ElemArg & elem, unsigned int) const override final;
-  ValueType evaluate(const Moose::ElemFromFaceArg & elem_from_face,
-                     unsigned int) const override final;
-  ValueType evaluate(const Moose::FaceArg & face, unsigned int) const override final;
-  ValueType evaluate(const Moose::SingleSidedFaceArg & face, unsigned int) const override final;
-  GradientType evaluateGradient(const Moose::ElemArg & elem_arg, unsigned int) const override final;
-  GradientType evaluateGradient(const Moose::ElemFromFaceArg & elem_from_face,
+  using ElemArg = Moose::ElemArg;
+  using ElemFromFaceArg = Moose::ElemFromFaceArg;
+  using FaceArg = Moose::FaceArg;
+  using SingleSidedFaceArg = Moose::SingleSidedFaceArg;
+
+  ValueType evaluate(const ElemArg & elem, unsigned int) const override final;
+  ValueType evaluate(const ElemFromFaceArg & elem_from_face, unsigned int) const override final;
+  ValueType evaluate(const FaceArg & face, unsigned int) const override final;
+  ValueType evaluate(const SingleSidedFaceArg & face, unsigned int) const override final;
+  GradientType evaluateGradient(const ElemArg & elem_arg, unsigned int) const override final;
+  GradientType evaluateGradient(const ElemFromFaceArg & elem_from_face,
                                 unsigned int) const override final;
-  GradientType evaluateGradient(const Moose::FaceArg & face, unsigned int) const override final;
-  GradientType evaluateGradient(const Moose::SingleSidedFaceArg & face,
-                                unsigned int) const override final;
-  DotType evaluateDot(const Moose::ElemArg & elem, unsigned int) const override final;
-  DotType evaluateDot(const Moose::FaceArg & face, unsigned int) const override final;
-  DotType evaluateDot(const Moose::SingleSidedFaceArg & face, unsigned int) const override final;
+  GradientType evaluateGradient(const FaceArg & face, unsigned int) const override final;
+  GradientType evaluateGradient(const SingleSidedFaceArg & face, unsigned int) const override final;
+  DotType evaluateDot(const ElemArg & elem, unsigned int) const override final;
+  DotType evaluateDot(const FaceArg & face, unsigned int) const override final;
+  DotType evaluateDot(const SingleSidedFaceArg & face, unsigned int) const override final;
 
   /**
    * @return the extrapolated value on the boundary face associated with \p fi
@@ -720,7 +723,7 @@ MooseVariableFV<OutputType>::adDofValues() const
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::ValueType
-MooseVariableFV<OutputType>::evaluate(const Moose::ElemArg & elem_arg, unsigned int) const
+MooseVariableFV<OutputType>::evaluate(const ElemArg & elem_arg, unsigned int) const
 {
   return getElemValue(elem_arg.elem);
 }
@@ -796,14 +799,14 @@ MooseVariableFV<OutputType>::evaluateFaceDotHelper(const FaceCallingArg & face) 
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::GradientType
-MooseVariableFV<OutputType>::evaluateGradient(const Moose::ElemArg & elem_arg, unsigned int) const
+MooseVariableFV<OutputType>::evaluateGradient(const ElemArg & elem_arg, unsigned int) const
 {
   return adGradSln(elem_arg.elem, elem_arg.apply_gradient_to_skewness);
 }
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::GradientType
-MooseVariableFV<OutputType>::evaluateGradient(const Moose::FaceArg & face, unsigned int) const
+MooseVariableFV<OutputType>::evaluateGradient(const FaceArg & face, unsigned int) const
 {
   mooseAssert(face.fi, "We must have a non-null face information");
   return adGradSln(*face.fi);
@@ -811,8 +814,7 @@ MooseVariableFV<OutputType>::evaluateGradient(const Moose::FaceArg & face, unsig
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::GradientType
-MooseVariableFV<OutputType>::evaluateGradient(const Moose::SingleSidedFaceArg & face,
-                                              unsigned int) const
+MooseVariableFV<OutputType>::evaluateGradient(const SingleSidedFaceArg & face, unsigned int) const
 {
   const auto * const fi = face.fi;
   mooseAssert(fi, "We must have a non-null face information");
@@ -821,17 +823,17 @@ MooseVariableFV<OutputType>::evaluateGradient(const Moose::SingleSidedFaceArg & 
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::DotType
-MooseVariableFV<OutputType>::evaluateDot(const Moose::FaceArg & face, unsigned int) const
+MooseVariableFV<OutputType>::evaluateDot(const FaceArg & face, unsigned int) const
 {
   return evaluateFaceDotHelper(face);
 }
 
 template <typename OutputType>
 typename MooseVariableFV<OutputType>::DotType
-MooseVariableFV<OutputType>::evaluateDot(const Moose::SingleSidedFaceArg & face, unsigned int) const
+MooseVariableFV<OutputType>::evaluateDot(const SingleSidedFaceArg & face, unsigned int) const
 {
   return evaluateFaceDotHelper(face);
 }
 
 template <>
-ADReal MooseVariableFV<Real>::evaluateDot(const Moose::ElemArg & elem, unsigned int state) const;
+ADReal MooseVariableFV<Real>::evaluateDot(const ElemArg & elem, unsigned int state) const;

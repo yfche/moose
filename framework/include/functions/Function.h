@@ -120,48 +120,48 @@ private:
    */
   Real getTime(unsigned int state) const;
 
-  ValueType evaluate(const Moose::ElemArg & elem, unsigned int state) const override final;
-  ValueType evaluate(const Moose::ElemFromFaceArg & elem_from_face,
-                     unsigned int state) const override final;
-  ValueType evaluate(const Moose::FaceArg & face, unsigned int state) const override final;
-  ValueType evaluate(const Moose::SingleSidedFaceArg & face,
-                     unsigned int state) const override final;
-  ValueType evaluate(const Moose::ElemQpArg & qp, unsigned int state) const override final;
-  ValueType evaluate(const Moose::ElemSideQpArg & elem_side_qp,
-                     unsigned int state) const override final;
+  using ElemArg = Moose::ElemArg;
+  using ElemFromFaceArg = Moose::ElemFromFaceArg;
+  using ElemQpArg = Moose::ElemQpArg;
+  using ElemSideQpArg = Moose::ElemSideQpArg;
+  using FaceArg = Moose::FaceArg;
+  using SingleSidedFaceArg = Moose::SingleSidedFaceArg;
 
-  GradientType evaluateGradient(const Moose::ElemArg & elem,
+  ValueType evaluate(const ElemArg & elem, unsigned int state) const override final;
+  ValueType evaluate(const ElemFromFaceArg & elem_from_face,
+                     unsigned int state) const override final;
+  ValueType evaluate(const FaceArg & face, unsigned int state) const override final;
+  ValueType evaluate(const SingleSidedFaceArg & face, unsigned int state) const override final;
+  ValueType evaluate(const ElemQpArg & qp, unsigned int state) const override final;
+  ValueType evaluate(const ElemSideQpArg & elem_side_qp, unsigned int state) const override final;
+
+  GradientType evaluateGradient(const ElemArg & elem, unsigned int state) const override final;
+  GradientType evaluateGradient(const ElemFromFaceArg & elem_from_face,
                                 unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::ElemFromFaceArg & elem_from_face,
+  GradientType evaluateGradient(const FaceArg & face, unsigned int state) const override final;
+  GradientType evaluateGradient(const SingleSidedFaceArg & face,
                                 unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::FaceArg & face,
-                                unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::SingleSidedFaceArg & face,
-                                unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::ElemQpArg & qp,
-                                unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::ElemSideQpArg & elem_side_qp,
+  GradientType evaluateGradient(const ElemQpArg & qp, unsigned int state) const override final;
+  GradientType evaluateGradient(const ElemSideQpArg & elem_side_qp,
                                 unsigned int state) const override final;
 
-  DotType evaluateDot(const Moose::ElemArg & elem, unsigned int state) const override final;
-  DotType evaluateDot(const Moose::ElemFromFaceArg & elem_from_face,
+  DotType evaluateDot(const ElemArg & elem, unsigned int state) const override final;
+  DotType evaluateDot(const ElemFromFaceArg & elem_from_face,
                       unsigned int state) const override final;
-  DotType evaluateDot(const Moose::FaceArg & face, unsigned int state) const override final;
-  DotType evaluateDot(const Moose::SingleSidedFaceArg & face,
-                      unsigned int state) const override final;
-  DotType evaluateDot(const Moose::ElemQpArg & qp, unsigned int state) const override final;
-  DotType evaluateDot(const Moose::ElemSideQpArg & elem_side_qp,
-                      unsigned int state) const override final;
+  DotType evaluateDot(const FaceArg & face, unsigned int state) const override final;
+  DotType evaluateDot(const SingleSidedFaceArg & face, unsigned int state) const override final;
+  DotType evaluateDot(const ElemQpArg & qp, unsigned int state) const override final;
+  DotType evaluateDot(const ElemSideQpArg & elem_side_qp, unsigned int state) const override final;
 
   /**
    * Compute \p _current_elem_qp_functor_xyz if we are on a new element
    */
-  void determineElemXYZ(const Moose::ElemQpArg & elem_qp) const;
+  void determineElemXYZ(const ElemQpArg & elem_qp) const;
 
   /**
    * Compute \p _current_elem_side_qp_functor_xyz if we are on a new element and side pair
    */
-  void determineElemSideXYZ(const Moose::ElemSideQpArg & elem_side_qp) const;
+  void determineElemSideXYZ(const ElemSideQpArg & elem_side_qp) const;
 
   /// Keep track of the current elem-qp functor element in order to enable local caching (e.g. if we
   /// call evaluate on the same element, but just with a different quadrature point, we can return

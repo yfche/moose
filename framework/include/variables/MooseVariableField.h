@@ -348,18 +348,18 @@ protected:
   using typename Moose::FunctorImpl<FunctorArg>::DotType;
   using typename Moose::FunctorImpl<FunctorArg>::GradientType;
 
-  ValueType evaluate(const Moose::ElemQpArg & elem_qp, unsigned int state) const override final;
-  ValueType evaluate(const Moose::ElemSideQpArg & elem_side_qp,
-                     unsigned int state) const override final;
+  using ElemQpArg = Moose::ElemQpArg;
+  using ElemSideQpArg = Moose::ElemSideQpArg;
 
-  GradientType evaluateGradient(const Moose::ElemQpArg & elem_qp,
-                                unsigned int state) const override final;
-  GradientType evaluateGradient(const Moose::ElemSideQpArg & elem_side_qp,
+  ValueType evaluate(const ElemQpArg & elem_qp, unsigned int state) const override final;
+  ValueType evaluate(const ElemSideQpArg & elem_side_qp, unsigned int state) const override final;
+
+  GradientType evaluateGradient(const ElemQpArg & elem_qp, unsigned int state) const override final;
+  GradientType evaluateGradient(const ElemSideQpArg & elem_side_qp,
                                 unsigned int state) const override final;
 
-  DotType evaluateDot(const Moose::ElemQpArg & elem_qp, unsigned int state) const override final;
-  DotType evaluateDot(const Moose::ElemSideQpArg & elem_side_qp,
-                      unsigned int state) const override final;
+  DotType evaluateDot(const ElemQpArg & elem_qp, unsigned int state) const override final;
+  DotType evaluateDot(const ElemSideQpArg & elem_side_qp, unsigned int state) const override final;
 
   /// the time integrator used for computing time derivatives
   const TimeIntegrator * const _time_integrator;
@@ -385,13 +385,12 @@ private:
   /**
    * Evaluate solution and gradient for the \p elem_qp argument
    */
-  void evaluateOnElement(const Moose::ElemQpArg & elem_qp, const unsigned int state) const;
+  void evaluateOnElement(const ElemQpArg & elem_qp, const unsigned int state) const;
 
   /**
    * Evaluate solution and gradient for the \p elem_side_qp argument
    */
-  void evaluateOnElementSide(const Moose::ElemSideQpArg & elem_side_qp,
-                             const unsigned int state) const;
+  void evaluateOnElementSide(const ElemSideQpArg & elem_side_qp, const unsigned int state) const;
 #endif
 
   /// Keep track of the current elem-qp functor element in order to enable local caching (e.g. if we

@@ -396,7 +396,7 @@ MooseVariableField<OutputType>::residualSetup()
   _current_elem_qp_functor_elem = nullptr;
   _current_elem_side_qp_functor_elem_side = std::make_pair(nullptr, libMesh::invalid_uint);
   MooseVariableFieldBase::residualSetup();
-  Moose::FunctorImpl<typename Moose::ADType<OutputType>::type>::residualSetup();
+  FunctorImpl<typename Moose::ADType<OutputType>::type>::residualSetup();
 }
 
 template <typename OutputType>
@@ -406,7 +406,7 @@ MooseVariableField<OutputType>::jacobianSetup()
   _current_elem_qp_functor_elem = nullptr;
   _current_elem_side_qp_functor_elem_side = std::make_pair(nullptr, libMesh::invalid_uint);
   MooseVariableFieldBase::jacobianSetup();
-  Moose::FunctorImpl<typename Moose::ADType<OutputType>::type>::jacobianSetup();
+  FunctorImpl<typename Moose::ADType<OutputType>::type>::jacobianSetup();
 }
 
 template class MooseVariableField<Real>;

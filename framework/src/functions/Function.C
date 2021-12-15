@@ -166,7 +166,7 @@ FunctionTempl<T>::determineElemSideXYZ(const ElemSideQpArg & elem_side_qp) const
 
 template <typename T>
 typename FunctionTempl<T>::ValueType
-FunctionTempl<T>::evaluate(const Moose::ElemArg & elem_arg, const unsigned int state) const
+FunctionTempl<T>::evaluate(const ElemArg & elem_arg, const unsigned int state) const
 {
   return value(getTime(state), elem_arg.elem->vertex_average());
 }
@@ -274,7 +274,7 @@ FunctionTempl<T>::evaluateGradient(const ElemSideQpArg & elem_side_qp,
 
 template <typename T>
 typename FunctionTempl<T>::DotType
-FunctionTempl<T>::evaluateDot(const Moose::ElemArg & elem_arg, const unsigned int state) const
+FunctionTempl<T>::evaluateDot(const ElemArg & elem_arg, const unsigned int state) const
 {
   return timeDerivative(getTime(state), elem_arg.elem->vertex_average());
 }
@@ -333,7 +333,7 @@ FunctionTempl<T>::timestepSetup()
 {
   _current_elem_qp_functor_elem = nullptr;
   _current_elem_side_qp_functor_elem_side = std::make_pair(nullptr, libMesh::invalid_uint);
-  Moose::FunctorImpl<T>::timestepSetup();
+  FunctorImpl<T>::timestepSetup();
 }
 
 template <typename T>
@@ -342,7 +342,7 @@ FunctionTempl<T>::residualSetup()
 {
   _current_elem_qp_functor_elem = nullptr;
   _current_elem_side_qp_functor_elem_side = std::make_pair(nullptr, libMesh::invalid_uint);
-  Moose::FunctorImpl<T>::residualSetup();
+  FunctorImpl<T>::residualSetup();
 }
 
 template <typename T>
@@ -351,7 +351,7 @@ FunctionTempl<T>::jacobianSetup()
 {
   _current_elem_qp_functor_elem = nullptr;
   _current_elem_side_qp_functor_elem_side = std::make_pair(nullptr, libMesh::invalid_uint);
-  Moose::FunctorImpl<T>::jacobianSetup();
+  FunctorImpl<T>::jacobianSetup();
 }
 
 template class FunctionTempl<Real>;
