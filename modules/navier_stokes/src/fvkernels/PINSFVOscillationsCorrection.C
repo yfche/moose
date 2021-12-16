@@ -17,8 +17,7 @@ registerMooseObject("NavierStokesApp", PINSFVOscillationsCorrection);
 InputParameters
 PINSFVOscillationsCorrection::validParams()
 {
-  auto params = FVFluxKernel::validParams();
-  params += INSFVMomentumResidualObject::validParams();
+  auto params = INSFVFluxKernel::validParams();
   params.addClassDescription(
       "Computes the diffusion kernel to avoid pressure-driven oscillations.");
   params.addParam<MooseFunctorName>("Darcy_name", "Name of the Darcy coefficients property.");
@@ -35,8 +34,7 @@ PINSFVOscillationsCorrection::validParams()
 }
 
 PINSFVOscillationsCorrection::PINSFVOscillationsCorrection(const InputParameters & params)
-  : FVFluxKernel(params),
-    INSFVMomentumResidualObject(*this),
+  : INSFVFluxKernel(params),
     _cL(isParamValid("Darcy_name") ? &getFunctor<ADRealVectorValue>("Darcy_name") : nullptr),
     _cQ(isParamValid("Forchheimer_name") ? &getFunctor<ADRealVectorValue>("Forchheimer_name")
                                          : nullptr),
@@ -65,22 +63,6 @@ PINSFVOscillationsCorrection::gatherRCData(const FaceInfo & fi)
   _normal = fi.normal();
   _face_type = fi.faceType(_var.name());
 
-  _computing_rc_data = true;
-  // Fill-in the coefficients _ae and _an (but without multiplication by A)
-  computeQpResidual();
-  _computing_rc_data = false;
-
-  if (_face_type == FaceInfo::VarFaceNeighbors::ELEM ||
-      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    _rc_uo.addToA(&fi.elem(), _index, _ae * (fi.faceArea() * fi.faceCoord()));
-  if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR ||
-      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    _rc_uo.addToA(fi.neighborPtr(), _index, _an * (fi.faceArea() * fi.faceCoord()));
-}
-
-ADReal
-PINSFVOscillationsCorrection::computeQpResidual()
-{
 #ifdef MOOSE_GLOBAL_AD_INDEXING
   using namespace Moose::FV;
 
@@ -124,28 +106,27 @@ PINSFVOscillationsCorrection::computeQpResidual()
   auto dudn =
       _var.gradient(Moose::FV::makeCDFace(*_face_info, faceArgSubdomains())) * _face_info->normal();
 
-  if (_computing_rc_data)
+  if (_face_type == FaceInfo::VarFaceNeighbors::ELEM ||
+      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
   {
-    if (_face_type == FaceInfo::VarFaceNeighbors::ELEM ||
-        _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    {
-      const auto dof_number = _face_info->elem().dof_number(_sys.number(), _var.number(), 0);
-      // A gradient is a linear combination of degrees of freedom so it's safe to straight-up index
-      // into the derivatives vector at the dof we care about
-      _ae = dudn.derivatives()[dof_number];
-      _ae *= -diff_face;
-    }
-    if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR ||
-        _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    {
-      const auto dof_number = _face_info->neighbor().dof_number(_sys.number(), _var.number(), 0);
-      _an = dudn.derivatives()[dof_number];
-      _an *= diff_face;
-    }
+    const auto dof_number = _face_info->elem().dof_number(_sys.number(), _var.number(), 0);
+    // A gradient is a linear combination of degrees of freedom so it's safe to straight-up index
+    // into the derivatives vector at the dof we care about
+    ADReal ae = dudn.derivatives()[dof_number];
+    ae *= -diff_face;
+    _rc_uo.addToA(&fi.elem(), _index, ae * (fi.faceArea() * fi.faceCoord()));
+  }
+  if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR ||
+      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
+  {
+    const auto dof_number = _face_info->neighbor().dof_number(_sys.number(), _var.number(), 0);
+    ADReal an = dudn.derivatives()[dof_number];
+    an *= diff_face;
+    _rc_uo.addToA(fi.neighborPtr(), _index, an * (fi.faceArea() * fi.faceCoord()));
   }
 
-  return -diff_face * dudn;
-#else
-  return 0;
+  const auto strong_resid = -diff_face * dudn;
+
+  processResidual(strong_resid * (fi.faceArea() * fi.faceCoord()));
 #endif
 }

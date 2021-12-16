@@ -49,7 +49,7 @@ INSFVWallFunctionBC::INSFVWallFunctionBC(const InputParameters & params)
 }
 
 ADReal
-INSFVWallFunctionBC::computeQpResidual()
+INSFVWallFunctionBC::computeStrongResidual()
 {
   // Get the velocity vector
   const FaceInfo & fi = *_face_info;
@@ -97,9 +97,11 @@ INSFVWallFunctionBC::gatherRCData(const FaceInfo & fi)
   _normal = fi.normal();
 
   // Fill-in the coefficient _a (but without multiplication by A)
-  computeQpResidual();
+  const auto strong_resid = computeStrongResidual();
 
   _rc_uo.addToA((_face_type == FaceInfo::VarFaceNeighbors::ELEM) ? &fi.elem() : fi.neighborPtr(),
                 _index,
                 _a * (fi.faceArea() * fi.faceCoord()));
+
+  processResidual(strong_resid * (fi.faceArea() * fi.faceCoord()));
 }

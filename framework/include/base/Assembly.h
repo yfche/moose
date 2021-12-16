@@ -1667,9 +1667,16 @@ public:
   }
 
   /**
+   * This simply caches the residual value for the corresponding index for the provided
+   * \p vector_tags, and applies any scaling factors.
+   */
+  void processResidual(Real residual, dof_id_type dof_index, const std::set<TagID> & vector_tags);
+
+  /**
    * This method is only meant to be called if MOOSE is configured to use global AD indexing.
    * This simply caches the derivative values for the corresponding column indices for the provided
-   * \p matrix_tags. If called when using local AD indexing, this method will simply error
+   * \p matrix_tags, and applies any scaling factors. If called when using local AD indexing, this
+   * method will simply error
    */
   void processDerivatives(const ADReal & residual,
                           dof_id_type dof_index,

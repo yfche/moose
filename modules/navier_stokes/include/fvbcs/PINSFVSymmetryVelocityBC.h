@@ -22,7 +22,7 @@ public:
   PINSFVSymmetryVelocityBC(const InputParameters & params);
 
 protected:
-  ADReal computeQpResidual() override;
+  const Moose::FunctorImpl<ADReal> & epsFunctor() const override { return _eps; }
 
   /// porosity of the medium
   const Moose::Functor<ADReal> & _eps;

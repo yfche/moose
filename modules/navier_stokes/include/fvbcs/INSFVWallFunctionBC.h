@@ -26,7 +26,7 @@ public:
   void gatherRCData(const FaceInfo &) override final;
 
 protected:
-  virtual ADReal computeQpResidual() override;
+  ADReal computeStrongResidual();
 
   /// the dimension of the simulation
   const unsigned int _dim;

@@ -9,24 +9,27 @@
 
 #pragma once
 
+#include "INSFVFluxBC.h"
 #include "INSFVSymmetryBC.h"
-#include "INSFVMomentumResidualObject.h"
 
 /**
  * A class for setting a symmetry boundary condition on the velocity. It should be
  * used in conjunction with an INSFVSymmetryPressureBC.
  */
-class INSFVSymmetryVelocityBC : public INSFVSymmetryBC, public INSFVMomentumResidualObject
+class INSFVSymmetryVelocityBC : public INSFVFluxBC, public INSFVSymmetryBC
 {
 public:
   static InputParameters validParams();
   INSFVSymmetryVelocityBC(const InputParameters & params);
 
-  void gatherRCData(const Elem &) override {}
+  using INSFVFluxBC::gatherRCData;
   void gatherRCData(const FaceInfo & fi) override;
 
 protected:
-  ADReal computeQpResidual() override;
+  /**
+   * A virtual method that can be overridden in PINSFV classes to return a non-unity porosity
+   */
+  virtual const Moose::FunctorImpl<ADReal> & epsFunctor() const { return _unity_functor; }
 
   /// x-velocity
   const Moose::Functor<ADReal> & _u_functor;
@@ -41,8 +44,6 @@ protected:
   /// The mesh dimension
   const unsigned int _dim;
 
-  /// Whether we are computing RC data
-  bool _computing_rc_data;
-
-  ADReal _a = 0;
+  /// A unity functor used in the \p epsFunctor virtual method
+  const Moose::ConstantFunctor<ADReal> _unity_functor{1};
 };

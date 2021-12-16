@@ -424,7 +424,7 @@ INSFVRhieChowInterpolator::applyBData()
       if (_fe_problem.currentlyComputingJacobian())
         _assembly.processDerivatives(residual, dof_index, _matrix_tags);
       else
-        _assembly.cacheResidual(dof_index, residual.value(), _vector_tags);
+        _assembly.processResidual(residual.value(), dof_index, _vector_tags);
     }
   }
 

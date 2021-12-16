@@ -15,7 +15,8 @@ registerMooseObject("NavierStokesApp", INSFVSymmetryPressureBC);
 InputParameters
 INSFVSymmetryPressureBC::validParams()
 {
-  auto params = INSFVSymmetryBC::validParams();
+  auto params = FVFluxBC::validParams();
+  params += INSFVSymmetryBC::validParams();
   params.addClassDescription("Though applied to the pressure, this object ensures that the "
                              "velocity perpendicular to a symmetry bounadry is zero by setting the "
                              "mass flow rate across the symmetry boundary to zero.");
@@ -23,7 +24,7 @@ INSFVSymmetryPressureBC::validParams()
 }
 
 INSFVSymmetryPressureBC::INSFVSymmetryPressureBC(const InputParameters & params)
-  : INSFVSymmetryBC(params)
+  : FVFluxBC(params), INSFVSymmetryBC(params)
 {
 }
 

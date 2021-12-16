@@ -19,9 +19,8 @@ registerMooseObject("NavierStokesApp", INSFVMomentumAdvectionOutflowBC);
 InputParameters
 INSFVMomentumAdvectionOutflowBC::validParams()
 {
-  InputParameters params = FVMatAdvectionOutflowBC::validParams();
+  InputParameters params = INSFVFluxBC::validParams();
   params += INSFVFullyDevelopedFlowBC::validParams();
-  params += INSFVMomentumResidualObject::validParams();
   params.addRequiredCoupledVar("u", "The velocity in the x direction.");
   params.addCoupledVar("v", "The velocity in the y direction.");
   params.addCoupledVar("w", "The velocity in the z direction.");
@@ -32,15 +31,13 @@ INSFVMomentumAdvectionOutflowBC::validParams()
 }
 
 INSFVMomentumAdvectionOutflowBC::INSFVMomentumAdvectionOutflowBC(const InputParameters & params)
-  : FVMatAdvectionOutflowBC(params),
+  : INSFVFluxBC(params),
     INSFVFullyDevelopedFlowBC(params),
-    INSFVMomentumResidualObject(*this),
     _u_var(dynamic_cast<const INSFVVelocityVariable *>(getFieldVar("u", 0))),
     _v_var(dynamic_cast<const INSFVVelocityVariable *>(getFieldVar("v", 0))),
     _w_var(dynamic_cast<const INSFVVelocityVariable *>(getFieldVar("w", 0))),
     _dim(_subproblem.mesh().dimension()),
-    _rho(getFunctor<ADReal>(NS::density)),
-    _computing_rc_data(false)
+    _rho(getFunctor<ADReal>(NS::density))
 {
 #ifndef MOOSE_GLOBAL_AD_INDEXING
   mooseError("INSFV is not supported by local AD indexing. In order to use INSFV, please run the "
@@ -62,11 +59,17 @@ INSFVMomentumAdvectionOutflowBC::INSFVMomentumAdvectionOutflowBC(const InputPara
                "INSFVVelocityVariable.");
 }
 
-ADReal
-INSFVMomentumAdvectionOutflowBC::computeQpResidual()
+void
+INSFVMomentumAdvectionOutflowBC::gatherRCData(const FaceInfo & fi)
 {
-#ifdef MOOSE_GLOBAL_AD_INDEXING
   using namespace Moose::FV;
+
+  _face_info = &fi;
+  _normal = fi.normal();
+  _face_type = fi.faceType(_var.name());
+
+  if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR)
+    _normal = -_normal;
 
   ADRealVectorValue v(_u_var->getBoundaryFaceValue(*_face_info));
   if (_v_var)
@@ -86,37 +89,15 @@ INSFVMomentumAdvectionOutflowBC::computeQpResidual()
   // freedom at the cell centroid adjacent to the face, e.g. it can/will depend on surrounding cell
   // degrees of freedom as well
   auto var_boundary = _var(boundary_face);
-  if (_computing_rc_data)
-  {
-    const auto dof_number = elem.dof_number(_sys.number(), _var.number(), 0);
-    _a = var_boundary.derivatives()[dof_number];
-    _a *= _normal * v * rho_boundary / eps_boundary;
-  }
+  const auto dof_number = elem.dof_number(_sys.number(), _var.number(), 0);
+  ADReal a = var_boundary.derivatives()[dof_number];
+  a *= _normal * v * rho_boundary / eps_boundary;
 
-  return _normal * v * rho_boundary / eps_boundary * var_boundary;
-#else
-  mooseError("INSFV is not supported by local AD indexing. In order to use INSFV, please run the "
-             "configure script in the root MOOSE directory with the configure option "
-             "'--with-ad-indexing-type=global'");
-#endif
-}
-
-void
-INSFVMomentumAdvectionOutflowBC::gatherRCData(const FaceInfo & fi)
-{
-  _face_info = &fi;
-  _normal = fi.normal();
-  _face_type = fi.faceType(_var.name());
-
-  if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR)
-    _normal = -_normal;
-
-  _computing_rc_data = true;
-  // Fill-in the coefficient _a (but without multiplication by A)
-  computeQpResidual();
-  _computing_rc_data = false;
+  const auto strong_resid = _normal * v * rho_boundary / eps_boundary * var_boundary;
 
   _rc_uo.addToA((_face_type == FaceInfo::VarFaceNeighbors::ELEM) ? &fi.elem() : fi.neighborPtr(),
                 _index,
-                _a * (fi.faceArea() * fi.faceCoord()));
+                a * (fi.faceArea() * fi.faceCoord()));
+
+  processResidual(strong_resid * (fi.faceArea() * fi.faceCoord()));
 }

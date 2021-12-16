@@ -135,9 +135,6 @@ velocity_interp_method='rc'
   [outlet_u]
     type = INSFVMomentumAdvectionOutflowBC
     variable = u
-    advected_quantity = 'rhou'
-    vel = 'velocity'
-    advected_interp_method = ${advected_interp_method}
     u = u
     v = v
     boundary = 'right'
@@ -147,9 +144,6 @@ velocity_interp_method='rc'
   [outlet_v]
     type = INSFVMomentumAdvectionOutflowBC
     variable = v
-    advected_quantity = 'rhov'
-    vel = 'velocity'
-    advected_interp_method = ${advected_interp_method}
     u = u
     v = v
     boundary = 'right'

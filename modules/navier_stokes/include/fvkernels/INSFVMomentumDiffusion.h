@@ -9,29 +9,26 @@
 
 #pragma once
 
-#include "FVFluxKernel.h"
-#include "INSFVFluxKernelInterface.h"
+#include "INSFVFluxKernel.h"
 #include "INSFVMomentumResidualObject.h"
 
-class INSFVMomentumDiffusion : public FVFluxKernel,
-                               public INSFVFluxKernelInterface,
-                               public INSFVMomentumResidualObject
+class INSFVMomentumDiffusion : public INSFVFluxKernel
 {
 public:
   static InputParameters validParams();
   INSFVMomentumDiffusion(const InputParameters & params);
-  void gatherRCData(const Elem &) override final {}
+  using INSFVFluxKernel::gatherRCData;
   void gatherRCData(const FaceInfo & fi) override final;
-  void initialSetup() override { INSFVFluxKernelInterface::initialSetup(*this); }
 
 protected:
-  ADReal computeQpResidual() override;
+  /**
+   * routine to compute this object's strong residual (e.g. not multipled by area). This routine
+   * should also populate the _ae and _an coefficients
+   */
+  virtual ADReal computeStrongResidual();
 
   /// The dynamic viscosity
   const Moose::Functor<ADReal> & _mu;
-
-  /// Whether we are computing RhieChow data at the time of our residual evaluation
-  bool _computing_rc_data;
 
   /// The a coefficient for the element
   ADReal _ae = 0;

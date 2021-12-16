@@ -39,7 +39,7 @@ PINSFVMomentumDiffusion::PINSFVMomentumDiffusion(const InputParameters & params)
 }
 
 ADReal
-PINSFVMomentumDiffusion::computeQpResidual()
+PINSFVMomentumDiffusion::computeStrongResidual()
 {
 #ifdef MOOSE_GLOBAL_AD_INDEXING
   using namespace Moose::FV;
@@ -60,24 +60,21 @@ PINSFVMomentumDiffusion::computeQpResidual()
   auto dudn =
       _var.gradient(Moose::FV::makeCDFace(*_face_info, faceArgSubdomains())) * _face_info->normal();
 
-  if (_computing_rc_data)
+  if (_face_type == FaceInfo::VarFaceNeighbors::ELEM ||
+      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
   {
-    if (_face_type == FaceInfo::VarFaceNeighbors::ELEM ||
-        _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    {
-      const auto dof_number = _face_info->elem().dof_number(_sys.number(), _var.number(), 0);
-      // A gradient is a linear combination of degrees of freedom so it's safe to straight-up index
-      // into the derivatives vector at the dof we care about
-      _ae = dudn.derivatives()[dof_number];
-      _ae *= -mu_face;
-    }
-    if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR ||
-        _face_type == FaceInfo::VarFaceNeighbors::BOTH)
-    {
-      const auto dof_number = _face_info->neighbor().dof_number(_sys.number(), _var.number(), 0);
-      _an = dudn.derivatives()[dof_number];
-      _an *= mu_face;
-    }
+    const auto dof_number = _face_info->elem().dof_number(_sys.number(), _var.number(), 0);
+    // A gradient is a linear combination of degrees of freedom so it's safe to straight-up index
+    // into the derivatives vector at the dof we care about
+    _ae = dudn.derivatives()[dof_number];
+    _ae *= -mu_face;
+  }
+  if (_face_type == FaceInfo::VarFaceNeighbors::NEIGHBOR ||
+      _face_type == FaceInfo::VarFaceNeighbors::BOTH)
+  {
+    const auto dof_number = _face_info->neighbor().dof_number(_sys.number(), _var.number(), 0);
+    _an = dudn.derivatives()[dof_number];
+    _an *= mu_face;
   }
 
   // First term of residual

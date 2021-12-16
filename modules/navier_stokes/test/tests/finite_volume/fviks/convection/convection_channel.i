@@ -216,7 +216,6 @@ cp = 1
     boundary = 'top_to_0'
     u = u
     v = v
-    vel = 'velocity'
     momentum_component = 'x'
     rho = ${rho}
   []
@@ -226,7 +225,6 @@ cp = 1
     boundary = 'top_to_0'
     u = u
     v = v
-    vel = 'velocity'
     momentum_component = 'y'
     rho = ${rho}
   []

@@ -30,16 +30,3 @@ PINSFVSymmetryVelocityBC::PINSFVSymmetryVelocityBC(const InputParameters & param
              "'--with-ad-indexing-type=global'");
 #endif
 }
-
-ADReal
-PINSFVSymmetryVelocityBC::computeQpResidual()
-{
-  const auto face_eps = _eps(singleSidedFaceArg());
-
-  const auto insfv_residual = INSFVSymmetryVelocityBC::computeQpResidual();
-
-  if (_computing_rc_data)
-    _a /= face_eps;
-
-  return insfv_residual / face_eps;
-}

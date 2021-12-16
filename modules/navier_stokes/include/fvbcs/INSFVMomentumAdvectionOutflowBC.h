@@ -9,9 +9,8 @@
 
 #pragma once
 
-#include "FVMatAdvectionOutflowBC.h"
+#include "INSFVFluxBC.h"
 #include "INSFVFullyDevelopedFlowBC.h"
-#include "INSFVMomentumResidualObject.h"
 
 class INSFVVelocityVariable;
 
@@ -20,19 +19,19 @@ class INSFVVelocityVariable;
  * It advects momentum at the outflow, and may replace outlet pressure boundary conditions
  * when selecting a mean-pressure approach.
  */
-class INSFVMomentumAdvectionOutflowBC : public FVMatAdvectionOutflowBC,
-                                        public INSFVFullyDevelopedFlowBC,
-                                        public INSFVMomentumResidualObject
+class INSFVMomentumAdvectionOutflowBC : public INSFVFluxBC, public INSFVFullyDevelopedFlowBC
 {
 public:
   static InputParameters validParams();
   INSFVMomentumAdvectionOutflowBC(const InputParameters & params);
 
-  void gatherRCData(const Elem &) override {}
+  using INSFVFluxBC::gatherRCData;
   void gatherRCData(const FaceInfo &) override;
 
 protected:
-  virtual ADReal computeQpResidual() override;
+  /**
+   * A virtual method that can be overridden in PINSFV classes to return a non-unity porosity
+   */
   virtual const Moose::FunctorImpl<ADReal> & epsFunctor() const { return _unity_functor; }
 
   /// x-velocity
@@ -48,12 +47,6 @@ protected:
   /// The density
   const Moose::Functor<ADReal> & _rho;
 
-  /// whether we are computing Rhie-Chow data
-  bool _computing_rc_data;
-
-  /// A member to hold computation of the Rhie-Chow coefficient
-  ADReal _a = 0;
-
-  /// A unity functor used in the epsilon virtual method
+  /// A unity functor used in the \p epsFunctor virtual method
   const Moose::ConstantFunctor<ADReal> _unity_functor{1};
 };
