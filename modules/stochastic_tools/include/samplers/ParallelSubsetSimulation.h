@@ -35,6 +35,10 @@ protected:
   virtual void sampleSetUp(const Sampler::SampleMode mode) override;
   virtual Real computeSample(dof_id_type row_index, dof_id_type col_index) override;
 
+  // Modified by Yifeng
+  virtual Real proposeNewSampleRepeatedGeneration(const Real x, const Real rnd1, const Real rnd2);
+  virtual Real proposeNewSampleAdaptive(const Real x, const Real rnd1, const Real rnd2);
+
   /// Number of samples per subset
   const unsigned int & _num_samplessub;
 
@@ -46,6 +50,9 @@ protected:
 
   /// Initialize a certain number of random seeds. Change from the default only if you have to.
   const unsigned int & _num_random_seeds;
+
+  /// The sampling method to call
+  const MooseEnum & _sampling_method;
 
   /// Reporter value containing calculated outputs
   const std::vector<Real> & _outputs;

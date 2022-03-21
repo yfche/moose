@@ -11,7 +11,7 @@
 
 #include "MooseUtils.h"
 // #include "Sampler.h" // Yifeng
-#include "ReporterInterface.h"
+// #include "ReporterInterface.h"
 
 namespace AdaptiveMonteCarloUtils
 {
@@ -87,6 +87,8 @@ std::vector<Real> computeVectorABS(const std::vector<Real> & data);
  * @param the current sample
  * @param the random seed
  */
-Real proposeNewSample(const Real x, const Real rnd1, const Real rnd2);
+Real proposeNewSample(const Real x,
+                      const Real rnd1,
+                      const Real rnd2);
 
 } // namespace AdaptiveMonteCarloUtils

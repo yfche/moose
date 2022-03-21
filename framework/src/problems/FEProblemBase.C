@@ -37,6 +37,7 @@
 #include "Function.h"
 #include "NonlinearSystem.h"
 #include "Distribution.h"
+#include "MultivariateDistribution.h" // Yifeng
 #include "Sampler.h"
 #include "PetscSupport.h"
 #include "RandomInterface.h"
@@ -2142,6 +2143,31 @@ FEProblemBase::getDistribution(const std::string & name)
       .queryInto(objs);
   if (objs.empty())
     mooseError("Unable to find Distribution with name '" + name + "'");
+  return *(objs[0]);
+}
+
+// Yifeng
+void
+FEProblemBase::addMultivariateDistribution(const std::string & type,
+                               const std::string & name,
+                               InputParameters & parameters)
+{
+  parameters.set<std::string>("type") = type;
+  addObject<MultivariateDistribution>(type, name, parameters, /* threaded = */ false);
+}
+
+// Yifeng
+MultivariateDistribution &
+FEProblemBase::getMultivariateDistribution(const std::string & name)
+{
+  std::vector<MultivariateDistribution *> objs;
+  theWarehouse()
+      .query()
+      .condition<AttribSystem>("MultivariateDistribution")
+      .condition<AttribName>(name)
+      .queryInto(objs);
+  if (objs.empty())
+    mooseError("Unable to find MultivariateDistribution with name '" + name + "'");
   return *(objs[0]);
 }
 

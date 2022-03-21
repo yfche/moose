@@ -1352,6 +1352,7 @@ Parser::extractParams(const std::string & prefix, InputParameters & p)
       setscalar(MooseFunctorName, string);
       setscalar(MaterialName, string);
       setscalar(DistributionName, string);
+      setscalar(MultivariateDistributionName, string); // Yifeng
       setscalar(SamplerName, string);
       setscalar(TagName, string);
       setscalar(MeshGeneratorName, string);
@@ -1413,7 +1414,8 @@ Parser::extractParams(const std::string & prefix, InputParameters & p)
       setvector(MaterialPropertyName, string);
       setvector(MooseFunctorName, string);
       setvector(MaterialName, string);
-      setvector(DistributionName, string);
+      setvector(DistributionName, string); // Yifeng
+      setvector(MultivariateDistributionName, string);
       setvector(SamplerName, string);
       setvector(TagName, string);
       setvector(VariableName, VariableName);
@@ -1463,6 +1465,7 @@ Parser::extractParams(const std::string & prefix, InputParameters & p)
       setvectorvector(MooseFunctorName);
       setvectorvector(MaterialName);
       setvectorvector(DistributionName);
+      setvectorvector(MultivariateDistributionName); // Yifeng
       setvectorvector(SamplerName);
       else
       {

@@ -12,50 +12,23 @@
 #include "InputParameters.h"
 #include "ParallelUniqueId.h"
 #include "MooseObject.h"
-#include "MultivariateDistribution.h"  // Yifeng
 
 // Forward declarations
-class Distribution;
+class MultivariateDistribution;
 class FEProblemBase;
 
 /**
  * Interface for objects that need to use distributions
  *
- * Inherit from this class at a very low level to make the getDistribution method available.
+ * Inherit from this class at a very low level to make the getMultivariateDistribution method available.
  */
-class DistributionInterface
+class MultivariateDistributionInterface
 {
 public:
   static InputParameters validParams();
 
-  DistributionInterface(const MooseObject * moose_object);
+  MultivariateDistributionInterface(const MooseObject * moose_object);
 
-  ///@{
-  /**
-   * Get a distribution with a given name
-   * @param name The name of the parameter key of the distribution to retrieve
-   * @return The distribution with name associated with the parameter 'name'
-   */
-  const Distribution & getDistribution(const std::string & name) const;
-
-  template <typename T>
-  const T & getDistribution(const std::string & name) const;
-  ///@}
-
-  ///@{
-  /**
-   * Get a distribution with a given name
-   * @param name The name of the distribution to retrieve
-   * @return The distribution with name 'name'
-   */
-  const Distribution & getDistributionByName(const DistributionName & name) const;
-
-  template <typename T>
-  const T & getDistributionByName(const std::string & name) const;
-  ///@}
-
-
-  // Yifeng
   ///@{
   /**
    * Get a multivariate distribution with a given name
@@ -80,7 +53,6 @@ public:
   const T & getMultivariateDistributionByName(const std::string & name) const;
   ///@}
 
-
 private:
   /// Parameters of the object with this interface
   const InputParameters & _dni_params;
@@ -94,31 +66,31 @@ private:
 
 template <typename T>
 const T &
-DistributionInterface::getDistribution(const std::string & name) const
+MultivariateDistributionInterface::getMultivariateDistribution(const std::string & name) const
 {
   try
   {
-    const T & dist = dynamic_cast<const T &>(getDistribution(name));
+    const T & dist = dynamic_cast<const T &>(getMultivariateDistribution(name));
     return dist;
   }
   catch (std::bad_cast & exception)
   {
-    DistributionName dist_name = _dni_params.get<DistributionName>(name);
+    MultivariateDistributionName dist_name = _dni_params.get<MultivariateDistributionName>(name);
     mooseError("The '",
                _dni_moose_object_ptr->name(),
                "' object failed to retrieve '",
                dist_name,
-               "' distribution with the desired type.");
+               "' multivariate distribution with the desired type.");
   }
 }
 
 template <typename T>
 const T &
-DistributionInterface::getDistributionByName(const std::string & name) const
+MultivariateDistributionInterface::getMultivariateDistributionByName(const std::string & name) const
 {
   try
   {
-    const T & dist = dynamic_cast<const T &>(getDistribution(name));
+    const T & dist = dynamic_cast<const T &>(getMultivariateDistribution(name));
     return dist;
   }
   catch (std::bad_cast & exception)
@@ -127,6 +99,6 @@ DistributionInterface::getDistributionByName(const std::string & name) const
                _dni_moose_object_ptr->name(),
                "' object failed to retrieve '",
                name,
-               "' distribution with the desired type.");
+               "' multivariate distribution with the desired type.");
   }
 }

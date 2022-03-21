@@ -10,7 +10,7 @@
 #include "ParallelSubsetSimulation.h"
 #include "AdaptiveMonteCarloUtils.h"
 #include "Normal.h"
-#include "Uniform.h"
+// #include "Uniform.h"
 
 registerMooseObject("StochasticToolsApp", ParallelSubsetSimulation);
 
@@ -39,6 +39,11 @@ ParallelSubsetSimulation::validParams()
       "num_random_seeds",
       100000,
       "Initialize a certain number of random seeds. Change from the default only if you have to.");
+
+  // Yifeng
+  MooseEnum method("ComponentWise RepeatedGeneration Adaptive", "ComponentWise");
+  params.addParam<MooseEnum>("method", method, "The method to generate new samples in Markov chain.");
+
   return params;
 }
 
@@ -49,6 +54,7 @@ ParallelSubsetSimulation::ParallelSubsetSimulation(const InputParameters & param
     _use_absolute_value(getParam<bool>("use_absolute_value")),
     _subset_probability(getParam<Real>("subset_probability")),
     _num_random_seeds(getParam<unsigned int>("num_random_seeds")),
+    _sampling_method(getParam<MooseEnum>("method")), // Yifeng
     _outputs(getReporterValue<std::vector<Real>>("output_reporter")),
     _inputs(getReporterValue<std::vector<std::vector<Real>>>("inputs_reporter")),
     _step(getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")->timeStep()),
@@ -178,17 +184,83 @@ ParallelSubsetSimulation::computeSample(dof_id_type row_index, dof_id_type col_i
   else
   {
     const dof_id_type loc_ind = row_index - getLocalRowBegin();
-    // const Real rv = Normal::quantile(getRand(seed_value), _markov_seed[col_index][loc_ind], 1.0);
-    // const Real acceptance_ratio = std::log(Normal::pdf(rv, 0, 1)) -
-                                  // std::log(Normal::pdf(_markov_seed[col_index][loc_ind], 0, 1));
-    // const Real new_sample = acceptance_ratio > std::log(getRand(seed_value + 1))
-                                // ? rv
-                                // : _markov_seed[col_index][loc_ind];
-    // val = Normal::cdf(new_sample, 0, 1);
-    const Real rnd1 = getRand(seed_value);
-    const Real rnd2 = getRand(seed_value + 1);
-    val = AdaptiveMonteCarloUtils::proposeNewSample(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+
+    if (_sampling_method == "ComponentWise")
+    {
+      const Real rnd1 = getRand(seed_value);
+      const Real rnd2 = getRand(seed_value + 1);
+      val = AdaptiveMonteCarloUtils::proposeNewSample(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+
+    }
+    else if (_sampling_method == "RepeatedGeneration")
+    {
+      const Real rnd1 = getRand(seed_value);
+      const Real rnd2 = getRand(seed_value + 1);
+      val = ParallelSubsetSimulation::proposeNewSampleRepeatedGeneration(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+      // val = ParallelSubsetSimulation::proposeNewSampleAdaptive(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+    }
+    else if (_sampling_method == "Adaptive")
+    {
+      const Real rnd1 = getRand(seed_value);
+      const Real rnd2 = getRand(seed_value + 1);
+      val = ParallelSubsetSimulation::proposeNewSampleAdaptive(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+    }
+        // val = ParallelSubsetSimulation::proposeNewSample(_markov_seed[col_index][loc_ind], rnd1, rnd2);
+    // std::cerr << val << std::endl;
   }
 
   return _distributions[col_index]->quantile(val);
+}
+
+
+
+// Modified by Yifeng
+Real ParallelSubsetSimulation::proposeNewSampleAdaptive(const Real x, const Real rnd1, const Real rnd2)
+{
+  bool repeat = true;
+  const Real x_new = Normal::quantile(rnd1, x, 1.0);
+  const Real acceptance_ratio = std::log(Normal::pdf(x_new, 0, 1)) -
+                                std::log(Normal::pdf(x, 0, 1));
+  Real new_sample;
+  int i = 0;
+  while (repeat && i <= 10)
+  {
+    if (acceptance_ratio > std::log(rnd2))
+    {
+      new_sample = x_new;
+      repeat = false;
+    }
+    i++;
+  }
+  if (repeat)
+    new_sample = x;
+
+  Real val = Normal::cdf(new_sample, 0, 1);
+  return val;
+}
+
+
+// Modified by Yifeng
+Real ParallelSubsetSimulation::proposeNewSampleRepeatedGeneration(const Real x, const Real rnd1, const Real rnd2)
+{
+  bool repeat = true;
+  const Real x_new = Normal::quantile(rnd1, x, 1.0);
+  const Real acceptance_ratio = std::log(Normal::pdf(x_new, 0, 1)) -
+                                std::log(Normal::pdf(x, 0, 1));
+  Real new_sample;
+  int i = 0;
+  while (repeat && i <= 10)
+  {
+    if (acceptance_ratio > std::log(rnd2))
+    {
+      new_sample = x_new;
+      repeat = false;
+    }
+    i++;
+  }
+  if (repeat)
+    new_sample = x;
+
+  Real val = Normal::cdf(new_sample, 0, 1);
+  return val;
 }

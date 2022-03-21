@@ -1,0 +1,17 @@
+[Tests]
+  issues = '#12689'
+  [multivariate_distributions]
+    requirement = 'The system shall provide distribution function including'
+    # design = 'Uniform.md Weibull.md Normal.md TruncatedNormal.md JohnsonSB.md Logistic.md'
+    issues = '#12721'
+
+    [multivariate_normal]
+      type =  CSVDiff
+      input = multivariate_normal.i
+      csvdiff = 'multivariate_normal_out.csv'
+      allow_test_objects = true
+
+      detail = 'multivariate_normal,'
+    []
+  []
+[]

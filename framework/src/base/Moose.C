@@ -123,6 +123,7 @@ addActionTypes(Syntax & syntax)
 
   registerMooseObjectTask("add_function",                 Function,               false);
   registerMooseObjectTask("add_distribution",             Distribution,           false);
+  registerMooseObjectTask("add_multivariate_distribution",MultivariateDistribution,false); // Yifeng
   registerMooseObjectTask("add_sampler",                  Sampler,                false);
 
   registerMooseObjectTask("add_aux_kernel",               AuxKernel,              false);
@@ -294,6 +295,7 @@ addActionTypes(Syntax & syntax)
                            "(add_periodic_bc)"
                            "(add_user_object)"
                            "(add_distribution)"
+                           "(add_multivariate_distribution)"  //Yifeng
                            "(add_sampler)"
                            "(setup_function_complete)"
                            "(setup_adaptivity)"
@@ -441,6 +443,7 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntax("GlobalParamsAction", "GlobalParams");
 
   registerSyntax("AddDistributionAction", "Distributions/*");
+  registerSyntax("AddMultivariateDistributionAction", "MultivariateDistributions/*"); // Yifeng
   registerSyntax("AddSamplerAction", "Samplers/*");
 
   registerSyntax("SetupDebugAction", "Debug");

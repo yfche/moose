@@ -72,6 +72,7 @@ class InterfaceUserObject;
 class GeneralUserObject;
 class Function;
 class Distribution;
+class MultivariateDistribution; // Yifeng
 class Sampler;
 class KernelBase;
 class IntegratedBCBase;
@@ -587,6 +588,13 @@ public:
   virtual void
   addDistribution(const std::string & type, const std::string & name, InputParameters & parameters);
   virtual Distribution & getDistribution(const std::string & name);
+
+  /**
+   * The following functions will enable MOOSE to have the capability to import distributions
+   */ //Yifeng
+  virtual void
+  addMultivariateDistribution(const std::string & type, const std::string & name, InputParameters & parameters);
+  virtual MultivariateDistribution & getMultivariateDistribution(const std::string & name);
 
   /**
    * The following functions will enable MOOSE to have the capability to import Samplers

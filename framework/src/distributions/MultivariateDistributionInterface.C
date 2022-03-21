@@ -7,51 +7,35 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "DistributionInterface.h"
-#include "Distribution.h"
+#include "MultivariateDistributionInterface.h"
+#include "MultivariateDistribution.h"
 #include "SubProblem.h"
 #include "MooseTypes.h"
 #include "FEProblemBase.h"
-#include "MultivariateDistribution.h" // Yifeng
 
 InputParameters
-DistributionInterface::validParams()
+MultivariateDistributionInterface::validParams()
 {
   InputParameters params = emptyInputParameters();
   return params;
 }
 
-DistributionInterface::DistributionInterface(const MooseObject * moose_object)
+MultivariateDistributionInterface::MultivariateDistributionInterface(const MooseObject * moose_object)
   : _dni_params(moose_object->parameters()),
     _dni_feproblem(*_dni_params.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
     _dni_moose_object_ptr(moose_object)
 {
 }
 
-const Distribution &
-DistributionInterface::getDistribution(const std::string & name) const
-{
-  DistributionName dist_name = _dni_params.get<DistributionName>(name);
-  return _dni_feproblem.getDistribution(dist_name);
-}
-
-const Distribution &
-DistributionInterface::getDistributionByName(const DistributionName & name) const
-{
-  return _dni_feproblem.getDistribution(name);
-}
-
-
-// Yifeng
 const MultivariateDistribution &
-DistributionInterface::getMultivariateDistribution(const std::string & name) const
+MultivariateDistributionInterface::getMultivariateDistribution(const std::string & name) const
 {
   MultivariateDistributionName dist_name = _dni_params.get<MultivariateDistributionName>(name);
   return _dni_feproblem.getMultivariateDistribution(dist_name);
 }
 
 const MultivariateDistribution &
-DistributionInterface::getMultivariateDistributionByName(const MultivariateDistributionName & name) const
+MultivariateDistributionInterface::getMultivariateDistributionByName(const MultivariateDistributionName & name) const
 {
   return _dni_feproblem.getMultivariateDistribution(name);
 }
