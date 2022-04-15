@@ -62,6 +62,9 @@ protected:
   /// Initialize a certain number of random seeds. Change from the default only if you have to.
   const unsigned int & _num_random_seeds;
 
+  /// The sampling method to call
+  const MooseEnum & _sampling_method;
+
 private:
   /// Track the current step of the main App
   const int & _step;
@@ -83,4 +86,12 @@ private:
 
   /// Storage for previously accepted samples by the decision reporter system
   std::vector<std::vector<Real>> _inputs_sto;
+
+  /// Storage for AdaptiveOptimalScaling
+  Real _opt_rate;
+  RealEigenMatrix _COV;
+  std::vector<Real> _Log_lambda;
+  std::vector<Real> _Gamma;
+  RealEigenVector _MU;
+  Real _C0;
 };

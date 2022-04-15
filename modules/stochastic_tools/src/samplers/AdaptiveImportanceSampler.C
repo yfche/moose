@@ -39,6 +39,13 @@ AdaptiveImportanceSampler::validParams()
       "num_random_seeds",
       100000,
       "Initialize a certain number of random seeds. Change from the default only if you have to.");
+  MooseEnum method("MH AdaptiveMH", "MH");
+  params.addParam<MooseEnum>(
+      "method", method, "The method to generate new samples in Markov chain.");
+  // // Yifeng
+  // params.addParam<unsigned int>("num_samples_adaption", 10,
+  //                               "Number of samples to generate before performing adaption.");
+
   return params;
 }
 
@@ -52,6 +59,8 @@ AdaptiveImportanceSampler::AdaptiveImportanceSampler(const InputParameters & par
     _std_factor(getParam<Real>("std_factor")),
     _use_absolute_value(getParam<bool>("use_absolute_value")),
     _num_random_seeds(getParam<unsigned int>("num_random_seeds")),
+    _sampling_method(getParam<MooseEnum>("method")),
+    // _num_samples_adaption(getParam<unsigned int>("num_samples_adaption")), // Yifeng
     _step(getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")->timeStep()),
     _inputs(getReporterValue<std::vector<std::vector<Real>>>("inputs_reporter"))
 {
@@ -93,6 +102,24 @@ AdaptiveImportanceSampler::AdaptiveImportanceSampler(const InputParameters & par
   _std_sto.resize(_distributions.size());
 
   setNumberOfRandomSeeds(_num_random_seeds);
+
+  // AdaptiveOptimalScaling
+  if (_sampling_method == "AdaptiveMH")
+  {
+    _opt_rate = 0.44;
+    _COV = 1 * RealEigenMatrix::Identity(_distributions.size(), _distributions.size());
+    Moose::out << "_COV initial: " << _COV << std::endl;
+    _C0 = 1;
+    _Log_lambda.resize(1);
+    _Gamma.resize(1);
+    // _MU.resize(_distributions.size());
+    _MU = RealEigenVector::Zero(_distributions.size());
+    Moose::out << "_MU initial: " << _MU << std::endl;
+    _Log_lambda[0] = std::log(std::pow(2.38, 2) / _distributions.size());
+    _Gamma[0] = _C0;
+    // std::fill(_MU.begin(), _MU.end(), 0.0);
+  }
+
 }
 
 const std::vector<Real> &
@@ -131,24 +158,82 @@ AdaptiveImportanceSampler::computeSample(dof_id_type /*row_index*/, dof_id_type 
        sample is proposed such that it is very likely to result in a model failure as well.
        The `initial_values` and `proposal_std` parameters provided by the user affects the
        formation of the importance distribution. */
+    if (_step == 1)
+    {
+      for (dof_id_type i = 0; i < _distributions.size(); ++i)
+        _MU(i) = _inputs_sto[i].back();
+    }
+
+
     if (sample)
     {
-      for (dof_id_type j = 0; j < _distributions.size(); ++j)
-        _prev_value[j] = Normal::quantile(_distributions[j]->cdf(_inputs[j][0]), 0, 1);
-      Real acceptance_ratio = 0.0;
-      for (dof_id_type i = 0; i < _distributions.size(); ++i)
-        acceptance_ratio += std::log(Normal::pdf(_prev_value[i], 0, 1)) -
-                            std::log(Normal::pdf(_inputs_sto[i].back(), 0, 1));
-      if (acceptance_ratio > std::log(getRand(_step)))
+      if (_sampling_method == "MH")
       {
+        std::vector<Real> new_sample = AdaptiveMonteCarloUtils::proposeNewSampleMH(
+            _distributions, getRand(_step), _inputs, _inputs_sto);
         for (dof_id_type i = 0; i < _distributions.size(); ++i)
-          _inputs_sto[i].push_back(_prev_value[i]);
+          _inputs_sto[i].push_back(new_sample[i]);
       }
-      else
+
+      else if (_sampling_method == "AdaptiveMH")
       {
+        // Moose::out << "inputs0: " << _inputs[0].size() << std::endl;
+        // Moose::out << "inputs1: " << _inputs[1].size() << std::endl;
+
+        Real Lambda = std::exp(_Log_lambda.back());
+        Moose::out << "Lambda: " << Lambda << std::endl;
+        RealEigenVector current_sample(_distributions.size());
+        RealEigenVector propose_sample(_distributions.size());
         for (dof_id_type i = 0; i < _distributions.size(); ++i)
-          _inputs_sto[i].push_back(_inputs_sto[i].back());
+        {
+          current_sample(i) = _inputs_sto[i].back();
+          propose_sample(i) = _distributions[i]->cdf(_inputs[i][0]);
+          // current_sample(i) = Normal::quantile(_distributions[i]->cdf(_inputs[i].back()), 0, 1);
+        }
+
+        Moose::out << "current_sample: " << current_sample << std::endl;
+        // RealEigenVector generate_sample = AdaptiveMonteCarloUtils::sampleFromMultivariateNormal(current_sample, Lambda * _COV);
+        RealEigenVector generate_sample = AdaptiveMonteCarloUtils::sampleFromMultivariateNormal(propose_sample, Lambda * _COV);
+
+        RealEigenVector mean(_distributions.size());
+        mean.setZero();
+        RealEigenMatrix covariance = RealEigenMatrix::Identity(_distributions.size(), _distributions.size());
+
+        Real prob_eval_new = AdaptiveMonteCarloUtils::MVNpdf(generate_sample, mean, covariance);
+        Real prob_eval_old = AdaptiveMonteCarloUtils::MVNpdf(current_sample, mean, covariance);
+        Real acceptance_ratio = std::log(prob_eval_new) - std::log(prob_eval_old);
+
+
+        RealEigenVector new_sample(_distributions.size());
+        if (acceptance_ratio > std::log(getRand(_step)))  // previously ">"
+          new_sample = generate_sample;
+        else
+          new_sample = current_sample;
+
+        for (dof_id_type i = 0; i < _distributions.size(); ++i)
+          _inputs_sto[i].push_back(new_sample[i]);
+
+        // Adaption
+        // _Gamma.push_back(_C0 * std::pow(_step, -1/(1+ std::exp(_Log_lambda[0]))));
+        _Gamma.push_back(_C0 * std::pow(_step, -1));
+        Moose::out << "_Gamma: " << _Gamma.back() << std::endl;
+        Real ALPHA = std::min<Real>(1, exp(-acceptance_ratio));
+        Moose::out << "ALPHA: " << ALPHA << std::endl;
+        _Log_lambda.push_back(_Log_lambda.back() + _Gamma.back() * (ALPHA - _opt_rate));
+        Moose::out << "_Log_lambda: " << _Log_lambda.back() << std::endl;
+        _MU = _MU + _Gamma.back() * (new_sample - _MU);
+
+        RealEigenMatrix SS = (new_sample - _MU) * (new_sample - _MU).transpose();
+        // Moose::out << "(new_sample - _MU).transpose: " << (new_sample - _MU).transpose() << std::endl;
+        // Moose::out << "new_sample - _MU: " << new_sample - _MU << std::endl;
+        Moose::out << "new_sample: " << new_sample << std::endl;
+        Moose::out << "_MU: " << _MU << std::endl;
+        Moose::out << "SS: " << SS << std::endl;
+        _COV = _COV + _Gamma.back() * (SS - _COV);
+
+        Moose::out << "_COV: " << _COV << std::endl;
       }
+
     }
     _prev_value[col_index] =
         Normal::quantile(getRand(_step), _inputs_sto[col_index].back(), _proposal_std[col_index]);

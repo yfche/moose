@@ -10,6 +10,7 @@
 #pragma once
 
 #include "MooseUtils.h"
+#include "Sampler.h"
 
 namespace AdaptiveMonteCarloUtils
 {
@@ -77,5 +78,54 @@ Real computeMin(const std::vector<Real> & data);
  * @param the data vector
  */
 std::vector<Real> computeVectorABS(const std::vector<Real> & data);
+
+/**
+ * propose a new sample using ComponentWise-MH.
+ *
+ * @param the current sample
+ * @param the random seed
+ */
+Real proposeNewSampleComponentWiseMH(const Real x,
+                                     const Real rnd1,
+                                     const Real rnd2,
+                                     const Real proposal_std = 1.0);
+
+/**
+ * propose a new sample w/ regular MH. (AdaptiveImportanceSampler)
+ *
+ * @param the input distributions
+ * @param the random seed
+ * @param the input vector from the reporter
+ * @param the previously accepted samples
+ */
+std::vector<Real> proposeNewSampleMH(std::vector<const Distribution *> distributions,
+                                     const Real rnd,
+                                     const std::vector<std::vector<Real>> inputs,
+                                     std::vector<std::vector<Real>> _inputs_sto);
+
+
+/**
+* Draw sample from multivariate normal distribution with specified mean and covariance matrix
+*
+* @param the number of iterations
+* @param the mean vector
+* @param the covariance matrix
+*/
+RealEigenVector sampleFromMultivariateNormal(RealEigenVector mean,
+                                             RealEigenMatrix covariance_matrix,
+                                             unsigned int nr_iterations = 1000);
+
+
+
+/**
+* Calculate pdf of multivariate normal distribution
+*
+* @param the current sample
+* @param the mean vector
+* @param the covariance matrix
+*/
+Real
+MVNpdf(const RealEigenVector & x, const RealEigenVector & mean, const RealEigenMatrix & cov_mat);
+
 
 } // namespace AdaptiveMonteCarloUtils
